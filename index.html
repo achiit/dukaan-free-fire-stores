@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FF PRIME — Premium Free Fire Top-Up</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Sora', sans-serif; }
+  :root { 
+    --o:#ff6a00; --g:#f7b733; 
+    --ink:#1d1204; --mut:#8a6c53; 
+    --line:rgba(255,150,40,0.2); 
+    --bg:#fffdfa; --card-bg:#fff; 
+  }
+  
+  /* DARK MODE VARIABLES */
+  body.dark-mode {
+    --bg: #121212; --card-bg: #1e1e1e;
+    --ink: #f1f1f1; --mut: #a0a0a0;
+    --line: rgba(255,150,40,0.15);
+  }
+
+  body { background:var(--bg); color:var(--ink); overflow-x:hidden; transition: background 0.3s, color 0.3s; }
+  body.locked { overflow:hidden; }
+  button { font-family:inherit; cursor:pointer; border:none; }
+  .hide { display:none !important; }
+
+  /* MAINTENANCE SCREEN (BLACK SCREEN) */
+  #maintenanceScreen { position:fixed; inset:0; background:#000; color:#fff; z-index:999999; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
+  #maintenanceScreen.show { display:flex; }
+  #maintenanceScreen h1 { font-size:60px; margin-bottom:20px; animation: pulse 2s infinite; }
+  #maintenanceScreen h2 { font-size:26px; margin-bottom:15px; color:#ff6a00; letter-spacing:1px; }
+  #maintenanceScreen p { font-size:15px; color:#888; max-width:400px; line-height:1.6; }
+  @keyframes pulse { 0% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
+
+  /* LOADING OVERLAY */
+  #loadingOverlay { position:fixed; inset:0; background:rgba(255,255,255,0.95); backdrop-filter:blur(8px); z-index:99999; display:none; flex-direction:column; align-items:center; justify-content:center; }
+  body.dark-mode #loadingOverlay { background:rgba(18,18,18,0.95); }
+  #loadingOverlay.show { display:flex; }
+  
+  .spinner { width: 60px; height: 60px; border: 5px solid rgba(255, 106, 0, 0.2); border-top: 5px solid var(--o); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .load-text { font-size: 18px; font-weight: 800; color: var(--o); letter-spacing: 1px; }
+
+  /* LOGIN GATE */
+  .gate { position:fixed; inset:0; z-index:900; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); padding:20px; }
+  .gate-box { width:100%; max-width:400px; background:linear-gradient(180deg,var(--card-bg),var(--bg)); padding:35px 25px; border-radius:24px; box-shadow:0 20px 50px rgba(0,0,0,0.5); border:1px solid var(--line); text-align:center; }
+  .gate-logo { width:60px; height:60px; border-radius:18px; background:linear-gradient(140deg,#ffe6a6,#ff7a00); display:grid; place-items:center; font-weight:800; font-size:22px; color:#3a1c00; margin:0 auto 15px; transform:rotate(-6deg); box-shadow:0 10px 20px -10px rgba(255,140,20,0.9); overflow:hidden; }
+  .gate-logo img { width:100%; height:100%; object-fit:cover; }
+  .gate h2 { font-size:20px; font-weight:800; margin-bottom:8px; }
+  .gate p { font-size:12px; color:var(--mut); margin-bottom:20px; }
+  .input-g { text-align:left; margin-bottom:15px; }
+  .input-g label { display:block; font-size:10px; font-weight:800; text-transform:uppercase; color:#ad7a4c; margin-bottom:6px; letter-spacing:1px; }
+  .input-g input { width:100%; padding:14px; border:1.5px solid var(--line); border-radius:12px; font-size:14px; font-weight:600; background:var(--card-bg); color:var(--ink); outline:none; transition:0.2s; }
+  .input-g input:focus { border-color:var(--o); box-shadow:0 0 0 4px rgba(255,106,0,0.1); }
+  .btn-main { width:100%; padding:15px; border-radius:12px; background:linear-gradient(135deg,#ffd76a,#ff8a1f); color:#3a1c00; font-weight:800; font-size:14px; letter-spacing:1px; box-shadow:0 12px 22px -10px rgba(255,140,20,0.8); transition:0.2s; }
+  .btn-main:hover { transform:translateY(-2px); filter:brightness(1.05); }
+  .err { color:#d32f2f; font-size:11px; font-weight:700; margin-top:5px; min-height:14px; text-align:left; }
+
+  /* BLOCKED SCREEN */
+  .blocked { position:fixed; inset:0; z-index:999; display:flex; align-items:center; justify-content:center; background:var(--bg); text-align:center; padding:20px; }
+  .blocked h1 { color:#d32f2f; font-size:24px; margin-bottom:10px; }
+  .blocked p { color:var(--mut); font-size:14px; margin-bottom:20px; line-height:1.6; }
+
+  /* HEADER */
+  .header { position:sticky; top:0; z-index:50; background:var(--card-bg); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); padding:12px 20px; display:flex; justify-content:space-between; align-items:center; }
+  .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ink); }
+  .brand-logo { width:40px; height:40px; border-radius:12px; background:linear-gradient(140deg,#ffe6a6,#ff7a00); display:grid; place-items:center; font-weight:800; font-size:13px; color:#3a1c00; transform:rotate(-6deg); box-shadow:0 8px 16px -8px rgba(255,140,20,0.9); overflow:hidden; }
+  .brand-logo img { width:100%; height:100%; object-fit:cover; }
+  .brand h1 { font-size:16px; font-weight:800; }
+  .brand h1 span { color:var(--o); }
+  .brand p { font-size:9px; color:var(--mut); letter-spacing:2px; font-weight:700; text-transform:uppercase; }
+  .nav-right { display:flex; align-items:center; gap:10px; }
+  
+  .theme-btn { background:var(--bg); border:1.5px solid var(--line); color:var(--ink); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; transition:0.2s; }
+  .theme-btn:hover { border-color:var(--o); }
+  
+  .u-chip { display:flex; align-items:center; gap:8px; padding:4px 12px 4px 4px; border-radius:20px; background:var(--bg); border:1.5px solid var(--line); cursor:pointer; position:relative; }
+  .u-chip img { width:28px; height:28px; border-radius:50%; background:#ffe9c9; }
+  .u-chip span { font-size:12px; font-weight:800; }
+  .dropdown { position:absolute; top:calc(100% + 8px); right:0; width:200px; background:var(--card-bg); border-radius:14px; border:1px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,0.2); padding:6px; display:none; z-index:100; }
+  .dropdown.open { display:block; }
+  .dropdown button { width:100%; text-align:left; padding:10px 12px; border-radius:8px; background:none; font-size:12.5px; font-weight:700; color:var(--ink); transition:0.2s; display:flex; align-items:center; gap:10px; }
+  .dropdown button:hover { background:var(--bg); color:var(--o); }
+
+  .container { max-width:1100px; margin:0 auto; padding:20px; }
+  .banner { width:100%; height:180px; border-radius:18px; background-size:cover; background-position:center; margin-bottom:20px; position:relative; overflow:hidden; box-shadow:0 10px 20px -10px rgba(0,0,0,0.3); border: 2px solid var(--line); }
+  .banner-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.8), transparent); display:flex; align-items:flex-end; padding:20px; }
+  .banner h2 { color:#fff; font-size:22px; font-weight:800; text-shadow:0 2px 4px rgba(0,0,0,0.5); }
+  .banner span { color:var(--g); }
+  
+  /* SEPARATE HISTORY BUTTON */
+  .history-btn-main { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; max-width:300px; margin:0 auto 30px; padding:14px; background:var(--card-bg); border:1.5px dashed var(--o); border-radius:12px; font-weight:800; color:var(--o); font-size:14px; cursor:pointer; transition:0.3s; }
+  .history-btn-main:hover { background:#fff3e0; transform:translateY(-2px); }
+
+  .hero { text-align:center; padding:10px 0 20px; }
+  .hero h1 { font-size:32px; font-weight:800; line-height:1.1; letter-spacing:-1px; margin-bottom:10px; }
+  .hero h1 span { background:linear-gradient(100deg,#ff6a00,#ffb020); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hero p { color:var(--mut); font-size:14px; }
+  
+  /* FILTERS WITH ICONS */
+  .filters { display:flex; gap:10px; overflow-x:auto; padding-bottom:15px; margin-bottom:20px; justify-content:flex-start; scrollbar-width:none; }
+  .filters::-webkit-scrollbar { display:none; }
+  .filters button { padding:10px 18px; border-radius:25px; background:var(--card-bg); border:1.5px solid var(--line); font-size:13px; font-weight:800; color:var(--mut); white-space:nowrap; transition:0.3s; display:flex; align-items:center; gap:8px; }
+  .filters button i { font-size: 14px; }
+  .filters button.active { background:linear-gradient(135deg,#ffd76a,#ff8a1f); color:#3a1c00; border-color:transparent; box-shadow:0 8px 16px -8px rgba(255,140,20,0.8); transform:translateY(-2px); }
+  .filters button.active i { color:#3a1c00; }
+  .filters button:hover:not(.active) { border-color:rgba(255,150,40,0.6); color:var(--o); }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:20px; }
+  .card { background:var(--card-bg); border-radius:18px; padding:12px; border:1px solid var(--line); box-shadow:0 10px 20px -15px rgba(0,0,0,0.1); transition:0.3s; display:flex; flex-direction:column; }
+  .card:hover { transform:translateY(-5px); box-shadow:0 20px 30px -15px rgba(255,140,20,0.3); border-color:rgba(255,150,40,0.5); }
+  .c-img { width:100%; aspect-ratio:4/3; border-radius:12px; background:var(--bg); object-fit:contain; padding:5px; border:1px solid var(--line); }
+  .c-body { padding:10px 0 0; flex:1; display:flex; flex-direction:column; }
+  .c-title { font-size:14px; font-weight:800; margin-bottom:4px; }
+  .c-cat { font-size:10px; font-weight:800; color:#bb8455; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+  .c-price { font-size:18px; font-weight:800; color:var(--o); margin-top:auto; margin-bottom:10px; }
+  .btn-buy { width:100%; padding:11px; border-radius:10px; background:linear-gradient(135deg,#ffd76a,#ffb020 48%,#ff8a1f); color:#3a1c00; font-weight:800; font-size:12.5px; letter-spacing:1px; box-shadow:0 8px 16px -8px rgba(255,140,20,0.8); transition:0.2s; }
+  .btn-buy:hover { filter:brightness(1.05); transform:translateY(-1px); }
+
+  /* MODAL (CHECKOUT) */
+  .modal { position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); padding:20px; }
+  .modal.open { display:flex; }
+  .modal-box { width:100%; max-width:460px; background:var(--card-bg); border-radius:20px; padding:25px; position:relative; max-height:95vh; overflow-y:auto; }
+  .modal-close { position:absolute; top:15px; right:15px; background:var(--bg); border:1px solid var(--line); width:32px; height:32px; border-radius:50%; font-size:16px; font-weight:bold; cursor:pointer; color:var(--o); z-index:10; }
+  
+  .form-g { margin-bottom:15px; }
+  .form-g label { display:block; font-size:11px; font-weight:800; color:var(--mut); text-transform:uppercase; margin-bottom:6px; }
+  .form-g input[type="text"], .form-g input[type="file"], .form-g select { width:100%; padding:12px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; font-weight:700; outline:none; background:var(--bg); color:var(--ink); font-family:inherit;}
+  .form-g input:focus, .form-g select:focus { border-color:var(--o); }
+  
+  /* BIGGER QR AREA */
+  .qr-area { text-align:center; padding:25px 15px; background:var(--bg); border-radius:16px; border: 2px dashed var(--o); margin-bottom:20px; box-shadow:0 10px 20px -10px rgba(255,140,20,0.3); }
+  .qr-area canvas, .qr-area img { margin:0 auto 15px auto; display:block; width: 260px !important; height: 260px !important; background:#fff; padding:8px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.1); }
+  .qr-area .qr-amount { font-size:26px; font-weight:800; color:var(--o); margin-bottom:15px; }
+  .upi-copy-box { display:flex; align-items:center; justify-content:center; gap:10px; background:var(--card-bg); border:1px solid var(--line); padding:10px; border-radius:10px; width:max-content; margin:0 auto; }
+  .upi-copy-box p { font-size:14px; font-weight:800; color:var(--ink); }
+  .copy-btn { background:var(--o); color:#fff; padding:6px 12px; border-radius:6px; font-size:11px; font-weight:800; }
+
+  /* IMAGE PREVIEW */
+  .img-preview { width:80px; height:80px; object-fit:cover; border-radius:10px; border:2px solid var(--o); cursor:pointer; margin-top:10px; display:none; transition:0.2s; }
+  .img-preview:hover { transform:scale(1.05); }
+  .img-preview.show { display:block; }
+
+  /* FULL SCREEN IMAGE VIEWER */
+  .img-viewer { position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; display:none; align-items:center; justify-content:center; flex-direction:column; opacity:0; transition:opacity 0.3s ease; }
+  .img-viewer.show { display:flex; opacity:1; }
+  .img-viewer img { max-width:95%; max-height:80vh; border-radius:10px; transform:scale(0.7); transition:transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow:0 20px 50px rgba(0,0,0,0.5); }
+  .img-viewer.show img { transform:scale(1); }
+  .viewer-close { position:absolute; top:20px; right:20px; color:#fff; font-size:30px; font-weight:bold; cursor:pointer; background:rgba(255,255,255,0.2); width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+
+  /* HISTORY & FOOTER */
+  .history-list { display:flex; flex-direction:column; gap:12px; }
+  .hist-item { display:flex; gap:12px; padding:15px; border:1px solid var(--line); border-radius:14px; background:var(--card-bg); align-items:center; }
+  .hist-info { flex:1; }
+  .hist-info h4 { font-size:13px; font-weight:800; }
+  .hist-info p { font-size:11px; color:var(--mut); }
+  
+  /* PREMIUM STATUS BADGES */
+  .stat-badge { padding:5px 10px; border-radius:6px; font-size:10px; font-weight:800; text-transform:uppercase; text-align:center; letter-spacing:0.5px; }
+  .stat-badge.pending { background:rgba(255,193,7,0.15); color:#ffc107; border:1px solid rgba(255,193,7,0.3); } 
+  .stat-badge.approved { background:rgba(40,167,69,0.15); color:#28a745; border:1px solid rgba(40,167,69,0.3); } 
+  .stat-badge.rejected { background:rgba(220,53,69,0.15); color:#dc3545; border:1px solid rgba(220,53,69,0.3); } 
+  
+  .footer { text-align:center; padding:30px; margin-top:40px; border-top:1px solid var(--line); font-size:12px; color:var(--mut); }
+  .total-row { display:flex; justify-content:space-between; font-size:16px; font-weight:800; margin-bottom:15px; border-top:1px solid var(--line); padding-top:15px; }
+
+  /* --- FLOATING CHAT BOX --- */
+  .chat-widget { position:fixed; bottom:20px; right:20px; z-index:1000; display:flex; flex-direction:column; align-items:flex-end; }
+  .chat-btn { width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#ffd76a,#ff8a1f); display:flex; align-items:center; justify-content:center; font-size:26px; color:#3a1c00; box-shadow:0 10px 25px rgba(255,140,20,0.5); cursor:pointer; transition:0.3s; }
+  .chat-btn:hover { transform:scale(1.1); }
+  
+  .chat-box { width:340px; height:480px; background:var(--card-bg); border-radius:20px; box-shadow:0 20px 50px rgba(0,0,0,0.3); border:1px solid var(--line); display:flex; flex-direction:column; overflow:hidden; margin-bottom:15px; transform-origin:bottom right; transition:0.3s; position:absolute; bottom:70px; right:0; }
+  .chat-box.hide { transform:scale(0); opacity:0; pointer-events:none; }
+  
+  .chat-header { background:linear-gradient(135deg,#ff6a00,#ff8a1f); padding:15px 20px; color:#fff; display:flex; justify-content:space-between; align-items:center; font-weight:800; }
+  .chat-header span { display:flex; align-items:center; gap:8px; }
+  .chat-header button { background:rgba(255,255,255,0.2); border:none; color:#fff; width:30px; height:30px; border-radius:50%; font-size:14px; cursor:pointer; transition:0.2s; }
+  .chat-header button:hover { background:rgba(255,255,255,0.4); }
+  
+  .chat-body { flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; background:var(--bg); }
+  .chat-msg { padding:12px 16px; border-radius:16px; font-size:13px; max-width:85%; line-height:1.4; font-weight:600; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
+  .chat-msg.bot { background:var(--card-bg); color:var(--ink); border-bottom-left-radius:4px; align-self:flex-start; border:1px solid var(--line); }
+  .chat-msg.user { background:linear-gradient(135deg,#ffd76a,#ff8a1f); color:#3a1c00; border-bottom-right-radius:4px; align-self:flex-end; }
+  
+  .chat-input { padding:12px; border-top:1px solid var(--line); display:flex; gap:10px; background:var(--card-bg); }
+  .chat-input input { flex:1; padding:12px 15px; border:1.5px solid var(--line); border-radius:25px; outline:none; font-size:13px; font-weight:600; background:var(--bg); color:var(--ink); font-family:inherit; }
+  .chat-input input:focus { border-color:var(--o); }
+  .chat-input button { background:var(--o); color:#fff; border:none; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; transition:0.2s; }
+  .chat-input button:hover { transform:scale(1.05); }
+
+  @media(max-width:600px) {
+    .hero h1 { font-size:26px; }
+    .banner { height:140px; }
+    .banner h2 { font-size:18px; }
+    .grid { grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px; }
+    .c-title { font-size:13px; }
+    .c-price { font-size:16px; }
+    .btn-buy { font-size:11px; padding:9px; }
+    .qr-area canvas, .qr-area img { width: 220px !important; height: 220px !important; }
+    .chat-box { width:calc(100vw - 40px); right:0; }
+  }
+</style>
+</head>
+<body class="locked">
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="load-text">Verifying Transaction...</div>
+</div>
+
+<!-- MAINTENANCE SCREEN -->
+<div id="maintenanceScreen">
+  <h1><i class="fa-solid fa-screwdriver-wrench"></i></h1>
+  <h2>SITE UNDER MAINTENANCE</h2>
+  <p>We are currently upgrading our systems to serve you better. Please check back later.</p>
+</div>
+
+<!-- FULL SCREEN IMAGE VIEWER -->
+<div class="img-viewer" id="imgViewer" onclick="closeImageViewer()">
+  <div class="viewer-close"><i class="fa-solid fa-xmark"></i></div>
+  <img id="fullScreenImg" src="" alt="Full Preview">
+</div>
+
+<div id="blockScreen" class="blocked hide">
+  <div>
+    <h1 style="font-size:50px;"><i class="fa-solid fa-ban"></i></h1>
+    <h1>ACCESS RESTRICTED</h1>
+    <p>Aapka account block kar diya gaya hai.<br>Kripya support se contact karein.</p>
+    <button class="btn-main" style="max-width:200px;" onclick="location.reload()">Exit</button>
+  </div>
+</div>
+
+<!-- LOGIN GATE -->
+<div id="loginGate" class="gate">
+  <div class="gate-box">
+    <div class="gate-logo" id="gateLogo">FF</div>
+    <h2>Welcome to FF PRIME</h2>
+    <p>Enter your details to start shopping</p>
+    <div class="input-g">
+      <label>Your Name</label>
+      <input type="text" id="logName" placeholder="Apna naam likhein">
+      <div class="err" id="errName"></div>
+    </div>
+    <div class="input-g">
+      <label>Mobile Number</label>
+      <input type="tel" id="logPhone" placeholder="10-digit number" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      <div class="err" id="errPhone"></div>
+    </div>
+    <button class="btn-main" id="btnLogin" onclick="doLogin()">CONTINUE</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hide">
+  <header class="header">
+    <div class="brand">
+      <div class="brand-logo" id="headerLogo">FF</div>
+      <div>
+        <h1 id="headerTitle">FF <span>PRIME</span></h1>
+        <p>Premium Top-Up</p>
+      </div>
+    </div>
+    <div class="nav-right">
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()"><i class="fa-solid fa-moon"></i></button>
+      <div class="u-chip" onclick="toggleDrop()">
+        <img id="userAvatar" src="" alt="">
+        <span id="userName">User</span>
+        <div class="dropdown" id="userDrop">
+          <button onclick="showPage('profile')"><i class="fa-solid fa-user"></i> Profile</button>
+          <button onclick="logout()" style="color:#d32f2f;"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="pageHome" class="container">
+    <div class="banner" id="siteBanner">
+      <div class="banner-overlay">
+        <h2>Welcome back, <span id="bannerName">Player</span>!</h2>
+      </div>
+    </div>
+    
+    <!-- SEPARATE HISTORY BUTTON -->
+    <button class="history-btn-main" onclick="showPage('history')">
+      <i class="fa-solid fa-clock-rotate-left"></i> View My Order History
+    </button>
+
+    <div class="hero">
+      <h1>Level Up With <span id="heroTitle">FF PRIME</span></h1>
+      <p>Get your premium Free Fire Diamonds & Bundles instantly.</p>
+    </div>
+    
+    <!-- FILTERS WITH ICONS -->
+    <div class="filters" id="filters"></div>
+    
+    <div class="grid" id="productGrid"></div>
+    <div class="footer">
+      &copy; 2024 FF PRIME. All rights reserved.
+    </div>
+  </div>
+
+  <div id="pageHistory" class="container hide">
+    <button class="btn-buy" style="width:auto; padding:10px 20px; margin-bottom:20px;" onclick="showPage('home')"><i class="fa-solid fa-arrow-left"></i> Back to Store</button>
+    <h2 style="font-size:20px; font-weight:800; margin-bottom:20px;">My Order History</h2>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div id="pageProfile" class="container hide">
+    <button class="btn-buy" style="width:auto; padding:10px 20px; margin-bottom:20px;" onclick="showPage('home')"><i class="fa-solid fa-arrow-left"></i> Back to Store</button>
+    <div style="max-width:400px; margin:0 auto; background:var(--card-bg); padding:25px; border-radius:16px; border:1px solid var(--line);">
+      <h2 style="font-size:18px; font-weight:800; margin-bottom:20px;">My Profile</h2>
+      <div class="form-g">
+        <label>Display Name</label>
+        <input type="text" id="profName">
+      </div>
+      <div class="form-g">
+        <label>Phone Number</label>
+        <input type="text" id="profPhone" disabled style="opacity:0.6;">
+      </div>
+      <button class="btn-main" onclick="saveProfile()">SAVE CHANGES</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div id="checkoutModal" class="modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    
+    <div class="qr-area" id="qrArea">
+      <div class="qr-amount" id="qrAmountText">Pay ₹0</div>
+      <div id="qrcode"></div>
+      <div class="upi-copy-box">
+        <p id="upiText">ffprime@upi</p>
+        <button class="copy-btn" onclick="copyUpi()">COPY UPI</button>
+      </div>
+    </div>
+
+    <div class="form-g" style="margin-top:20px;">
+      <label>Free Fire UID</label>
+      <input type="text" id="gameUid" placeholder="Enter 8-12 digit UID" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    </div>
+    
+    <div class="form-g">
+      <label>Select Country</label>
+      <select id="countrySelect">
+        <option value="India">India</option>
+        <option value="Bangladesh">Bangladesh</option>
+        <option value="Pakistan">Pakistan</option>
+        <option value="Indonesia">Indonesia</option>
+        <option value="Brazil">Brazil</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div class="form-g">
+      <label>Upload Payment Screenshot</label>
+      <input type="file" id="payScreenshot" accept="image/*" onchange="previewImage(this)">
+      <img id="imgPreview" class="img-preview" onclick="openImageViewer()">
+    </div>
+
+    <div class="total-row">
+      <span>Total Amount:</span>
+      <span id="finalTotal" style="color:var(--o);">₹0</span>
+    </div>
+
+    <button class="btn-main" onclick="placeOrder()" id="btnPlaceOrder">CONFIRM PURCHASE</button>
+  </div>
+</div>
+
+<!-- FLOATING CHAT BOX (Smart Bot) -->
+<div class="chat-widget">
+  <div class="chat-box hide" id="chatBox">
+    <div class="chat-header">
+      <span><i class="fa-solid fa-headset"></i> FF PRIME Support</span>
+      <button onclick="toggleChat()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="chat-body" id="chatBody">
+      <div class="chat-msg bot">Hello! Welcome to FF PRIME. Aapki kya sahayata kar sakta hoon?</div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendChat()">
+      <button onclick="sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+  </div>
+  <div class="chat-btn" onclick="toggleChat()"><i class="fa-solid fa-headset"></i></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+  import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyCsGXtob2o_ba4Umk4g7srJyTa6lqLdN-o",
+    authDomain: "ff-prime-b4ecb.firebaseapp.com",
+    projectId: "ff-prime-b4ecb",
+    storageBucket: "ff-prime-b4ecb.firebasestorage.app",
+    messagingSenderId: "1036104370120",
+    appId: "1:1036104370120:web:466203f8cc4723642da2fd"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUser = null, userDocId = null, allProducts = [], activeCat = "All", selectedProduct = null, qty = 1;
+  let currentUpiId = "ffprime@upi";
+  let globalQrOverride = 0; 
+
+  const defaultProducts = [
+    { id:"p1", name:'9999 Diamonds', cat:'Diamonds', price:749, img:'https://thumb.viva.id/vivadigital/665x374/2025/05/28/6836a56fe5e9a-diamond-gratis-di-free-fire_digital.jpg' },
+    { id:"p2", name:'50000 Diamonds', cat:'Diamonds', price:3499, img:'https://www.droidlime.com/wp-content/uploads/2023/09/Top-Up-FF-Pakai-Pulsa-2-1-560x600.jpg' },
+    { id:"p3", name:'99999 Diamonds', cat:'Diamonds', price:6999, img:'https://cdn.oneesports.gg/wp-content/uploads/sites/2/2024/10/459490992_1009922500821731_5316791990261914927_n-450x253.jpg' },
+    { id:"p4", name:'Red Criminal', cat:'Bundles', price:599, img:'https://i.pinimg.com/736x/61/15/e6/6115e6c1358a325f7c8e06e309bd15de.jpg' },
+    { id:"p5", name:'Black Bunny', cat:'Bundles', price:499, img:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOoB8f0VWp4TXXRMCPRgwWxKgnTYSaj5UdRFA71tplRT57XqsrIOg3Umlx&s=10' },
+    { id:"p6", name:'Galactic Bunny', cat:'Bundles', price:799, img:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3Fm2hkOOJj66aqkapq8Gy3CCB71WVTecVh_q1V3rFcGnUjhAxBwoxfImz&s=10' },
+    { id:"p7", name:'Black Angelic', cat:'Bundles', price:699, img:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRKo7AX0pFQHsrGQiVKGI94XPwy60qdotOeU8EcE4UL4LFpRT_oN-yKE4s&s=10' },
+    { id:"p8", name:'Sakura Bundle', cat:'Bundles', price:549, img:'https://wallpapers.com/images/hd/free-fire-sakura-character-cosplay-cko9leyyn8cphy0v.jpg' },
+    { id:"p9", name:'VIP Gamer', cat:'Bundles', price:899, img:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcVHXtJb-y1EA6y-KR9iEXaL0IzgWfFCJqW2twTSMLmUQzgkJxHxa5Lg8&s=10' },
+    { id:"p10", name:'Hip Hop Bundle', cat:'Bundles', price:449, img:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRU5csRv-nwXJiJdCIO_5zr4WwhABQ2OKuxshFA_h4TLICkRF_zlskzwYEU&s=10' },
+    { id:"p11", name:'Hip Hop Premium', cat:'Bundles', price:649, img:'https://i.pinimg.com/736x/ae/ce/de/aecede32134ae391f8d45d24e91dfc93.jpg' },
+    { id:"p12", name:'Orange Shade Bundle', cat:'Bundles', price:529, img:'https://i.pinimg.com/736x/36/a3/17/36a31722d43a698a4b0e0b33153d03f1.jpg' },
+    { id:"p13", name:'New Emote Bundle', cat:'Emotes', price:399, img:'https://i.pinimg.com/736x/d7/60/d0/d760d0507232729181a57412224ec5de.jpg' },
+    { id:"p14", name:'Female Bundle', cat:'Bundles', price:479, img:'https://i.pinimg.com/236x/f8/ae/d3/f8aed34174d7e12b242d82eb5641014c.jpg' },
+    { id:"p15", name:'EVO Gun Max', cat:'Weapons', price:1199, img:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTygfU-NU4v0NMI7A-0ZQ3D1lHQfbUHxsleJTnJqKvlj3gCY2Wsi7uabKY&s=10' },
+    { id:"p16", name:'All Emotes', cat:'Emotes', price:1499, img:'https://blogger.googleusercontent.com/img/b/R29v2Xl/AVvXsEiXPwsFT_m2DhRvghsL5Cz5OXmgowLqKq_e4mDygPQ1Mpsdyn73Gdoy80mua4BkSriESthDD6xy9WjepGVGOgCpOMO9VdjYHb86RX5nitN3pksj869YJoSnxwPRbV6USBR2sxaFwFBeKJ5V1FUjFIMZkW4JY_DyfN0j7Rwqk5zDlsPnwpKVUogEKIFkG4U/s1080/WhatsApp%20Image%202025-05-04%20at%206.06.42%20PM%20(1).jpeg' },
+    { id:"p17", name:'500000 Coins', cat:'Coins', price:299, img:'https://png.pngtree.com/png-clipart/20200225/original/pngtree-gold-coin-with-franc-sign-icon-circle-png-image_5278600.jpg' }
+  ];
+
+  const catIcons = {
+    'All': '<i class="fa-solid fa-layer-group"></i>', 
+    'Diamonds': '<i class="fa-solid fa-gem"></i>', 
+    'Bundles': '<i class="fa-solid fa-shirt"></i>', 
+    'Emotes': '<i class="fa-solid fa-face-smile"></i>', 
+    'Weapons': '<i class="fa-solid fa-gun"></i>', 
+    'Coins': '<i class="fa-solid fa-coins"></i>'
+  };
+
+  const themeBtn = document.getElementById('themeBtn');
+  if(localStorage.getItem('ff_theme') === 'dark') {
+    document.body.classList.add('dark-mode');
+    themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+  }
+
+  window.toggleTheme = () => {
+    if(document.body.classList.contains('dark-mode')) {
+      document.body.classList.remove('dark-mode');
+      localStorage.setItem('ff_theme', 'light');
+      themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
+    } else {
+      document.body.classList.add('dark-mode');
+      localStorage.setItem('ff_theme', 'dark');
+      themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+    }
+  }
+
+  // REALTIME SETTINGS LISTENER
+  onSnapshot(doc(db, "settings", "global"), (docSnap) => {
+    if(docSnap.exists()) {
+      const s = docSnap.data();
+      
+      if (s.maintenanceMode === true) {
+        document.getElementById('maintenanceScreen').classList.add('show');
+      } else {
+        document.getElementById('maintenanceScreen').classList.remove('show');
+      }
+
+      if(s.upiId) currentUpiId = s.upiId;
+      if(s.qrOverride) globalQrOverride = Number(s.qrOverride);
+      if(s.bannerImg) document.getElementById('siteBanner').style.backgroundImage = `url('${s.bannerImg}')`;
+      
+      if(s.logoText) {
+        document.getElementById('heroTitle').innerText = s.logoText;
+        document.getElementById('headerTitle').innerHTML = s.logoText.replace(' ', ' <span>') + '</span>';
+      }
+      
+      if(s.logoImage) {
+        document.getElementById('headerLogo').innerHTML = `<img src="${s.logoImage}" alt="Logo">`;
+        document.getElementById('gateLogo').innerHTML = `<img src="${s.logoImage}" alt="Logo">`;
+      } else if(s.logoText) {
+        const txt = s.logoText.substring(0,2).toUpperCase();
+        document.getElementById('headerLogo').innerText = txt;
+        document.getElementById('gateLogo').innerText = txt;
+      }
+    }
+  });
+
+  async function seedProducts() {
+    try {
+      const snap = await getDocs(collection(db, "products"));
+      if(snap.empty) {
+        for(let p of defaultProducts) {
+          await setDoc(doc(db, "products", p.id), p);
+        }
+      }
+    } catch(e) { console.log(e); }
+  }
+  seedProducts();
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const savedId = localStorage.getItem('ff_user_id');
+      const savedData = localStorage.getItem('ff_user_data');
+      if(savedId && savedData) {
+        const uSnap = await getDoc(doc(db, "users", savedId));
+        if(uSnap.exists()) {
+          if(uSnap.data().blocked) {
+            document.getElementById('loginGate').classList.add('hide');
+            document.getElementById('blockScreen').classList.remove('hide');
+          } else {
+            userDocId = savedId;
+            currentUser = uSnap.data();
+            startApp();
+          }
+        }
+      }
+    }
+  });
+
+  window.doLogin = async () => {
+    const name = document.getElementById('logName').value.trim();
+    const phone = document.getElementById('logPhone').value.trim();
+    
+    if(name.length < 2) return document.getElementById('errName').innerText = "Enter valid name";
+    if(phone.length !== 10) return document.getElementById('errPhone').innerText = "Enter 10-digit number";
+    
+    const btn = document.getElementById('btnLogin');
+    btn.innerText = "Checking...";
+    
+    try {
+      if (!auth.currentUser) await signInAnonymously(auth);
+
+      const uRef = doc(db, "users", phone);
+      const uSnap = await getDoc(uRef);
+      
+      if(uSnap.exists()) {
+        const existingUser = uSnap.data();
+        if(existingUser.blocked) {
+          document.getElementById('loginGate').classList.add('hide');
+          document.getElementById('blockScreen').classList.remove('hide');
+          return;
+        }
+        userDocId = phone;
+        currentUser = existingUser;
+        localStorage.setItem('ff_user_id', phone);
+        localStorage.setItem('ff_user_data', JSON.stringify(currentUser));
+        startApp();
+      } else {
+        const newUser = {
+          name: name,
+          phone: phone,
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name + phone)}`,
+          blocked: false,
+          createdAt: serverTimestamp()
+        };
+        
+        await setDoc(uRef, newUser);
+        userDocId = phone;
+        currentUser = newUser;
+        localStorage.setItem('ff_user_id', phone);
+        localStorage.setItem('ff_user_data', JSON.stringify(currentUser));
+        startApp();
+      }
+    } catch(e) {
+      alert("Login Failed! \nError: " + e.message);
+      btn.innerText = "CONTINUE";
+    }
+  };
+
+  async function startApp() {
+    document.getElementById('loginGate').classList.add('hide');
+    document.getElementById('app').classList.remove('hide');
+    document.body.classList.remove('locked');
+    
+    document.getElementById('userName').innerText = currentUser.name;
+    document.getElementById('userAvatar').src = currentUser.avatar;
+    document.getElementById('bannerName').innerText = currentUser.name; 
+
+    onSnapshot(collection(db, "products"), (snap) => {
+      allProducts = [];
+      snap.forEach(d => allProducts.push(d.data()));
+      renderFilters();
+      renderGrid();
+    });
+
+    loadHistory();
+  }
+
+  function renderFilters() {
+    const cats = ['All', ...new Set(allProducts.map(p => p.cat))];
+    const el = document.getElementById('filters');
+    el.innerHTML = cats.map(c => {
+      const icon = catIcons[c] || '<i class="fa-solid fa-tag"></i>';
+      return `<button class="${c === activeCat ? 'active' : ''}" onclick="setCat('${c}')">${icon} ${c}</button>`;
+    }).join('');
+  }
+
+  window.setCat = (c) => { activeCat = c; renderFilters(); renderGrid(); }
+
+  function renderGrid() {
+    const grid = document.getElementById('productGrid');
+    const list = activeCat === 'All' ? allProducts : allProducts.filter(p => p.cat === activeCat);
+    
+    if(list.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--mut);">No products found in this category.</div>';
+      return;
+    }
+
+    grid.innerHTML = list.map(p => `
+      <div class="card">
+        <img src="${p.img}" class="c-img" onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect width=%22200%22 height=%22150%22 fill=%22%23ffe3ba%22/%3E%3Ctext x=%22100%22 y=%2280%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23b45a00%22%3ENo Image%3C/text%3E%3C/svg%3E'">
+        <div class="c-body">
+          <div class="c-title">${p.name}</div>
+          <div class="c-cat">${p.cat}</div>
+          <div class="c-price">₹${p.price}</div>
+          <button class="btn-buy" onclick="openCheckout('${p.id}')">BUY NOW</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.showPage = (page) => {
+    document.getElementById('pageHome').classList.add('hide');
+    document.getElementById('pageHistory').classList.add('hide');
+    document.getElementById('pageProfile').classList.add('hide');
+    document.getElementById('page' + page.charAt(0).toUpperCase() + page.slice(1)).classList.remove('hide');
+    document.getElementById('userDrop').classList.remove('open');
+    
+    if(page === 'profile') {
+      document.getElementById('profName').value = currentUser.name;
+      document.getElementById('profPhone').value = currentUser.phone;
+    }
+  }
+
+  window.toggleDrop = () => document.getElementById('userDrop').classList.toggle('open');
+
+  window.openCheckout = (id) => {
+    selectedProduct = allProducts.find(p => p.id === id);
+    if(!selectedProduct) return;
+    
+    document.getElementById('gameUid').value = '';
+    document.getElementById('payScreenshot').value = ''; 
+    document.getElementById('imgPreview').classList.remove('show');
+    
+    updateTotal();
+    document.getElementById('checkoutModal').classList.add('open');
+  }
+
+  window.closeModal = () => document.getElementById('checkoutModal').classList.remove('open');
+
+  function updateTotal() {
+    let actualPrice = selectedProduct.price * qty; 
+    let qrAmount = actualPrice;
+    
+    if (selectedProduct.qrOverride && Number(selectedProduct.qrOverride) > 0) {
+        qrAmount = Number(selectedProduct.qrOverride);
+    } 
+    else if (globalQrOverride > 0) {
+        qrAmount = globalQrOverride;
+    }
+    
+    document.getElementById('finalTotal').innerText = '₹' + actualPrice;
+    document.getElementById('qrAmountText').innerText = 'Pay ₹' + actualPrice;
+    
+    document.getElementById('qrcode').innerHTML = '';
+    new QRCode(document.getElementById("qrcode"), {
+      text: `upi://pay?pa=${currentUpiId}&pn=FFPRIME&am=${qrAmount}&cu=INR`,
+      width: 260, height: 260
+    });
+    document.getElementById('upiText').innerText = currentUpiId;
+  }
+
+  window.copyUpi = () => {
+    navigator.clipboard.writeText(currentUpiId);
+    alert("UPI ID Copied!");
+  }
+
+  window.previewImage = (input) => {
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        const img = document.getElementById('imgPreview');
+        img.src = e.target.result;
+        img.classList.add('show');
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  window.openImageViewer = () => {
+    const imgSrc = document.getElementById('imgPreview').src;
+    if(!imgSrc) return;
+    document.getElementById('fullScreenImg').src = imgSrc;
+    document.getElementById('imgViewer').classList.add('show');
+  }
+
+  window.closeImageViewer = () => {
+    document.getElementById('imgViewer').classList.remove('show');
+  }
+
+  window.placeOrder = async () => {
+    const uid = document.getElementById('gameUid').value.trim();
+    if(uid.length < 8 || uid.length > 12) return alert("Enter valid Free Fire UID (8-12 digits)");
+    
+    const fileInput = document.getElementById('payScreenshot');
+    if (!fileInput.files.length) return alert("Please upload payment screenshot!");
+
+    const country = document.getElementById('countrySelect').value;
+    
+    document.getElementById('loadingOverlay').classList.add('show');
+    
+    setTimeout(async () => {
+      try {
+        const total = selectedProduct.price * qty;
+        
+        const orderData = {
+          userId: userDocId, 
+          userName: currentUser.name, 
+          userPhone: currentUser.phone,
+          productName: selectedProduct.name, 
+          gameUid: uid, 
+          country: country,
+          price: selectedProduct.price, 
+          qty: qty, 
+          total: total, 
+          paymentMethod: 'UPI',
+          screenshotUrl: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80", 
+          status: 'Pending', 
+          createdAt: serverTimestamp()
+        };
+        
+        await addDoc(collection(db, "orders"), orderData);
+        
+        document.getElementById('loadingOverlay').classList.remove('show');
+        
+        alert("✅ Transaction Successful!\n\nAapka order verify ho raha hai aur 24 ghante ke andar delivery complete kar di jayegi.");
+        
+        closeModal(); 
+        loadHistory(); 
+        showPage('home');
+      } catch(e) {
+        document.getElementById('loadingOverlay').classList.remove('show');
+        alert("Transaction failed: " + e.message);
+      }
+    }, 2500);
+  }
+
+  async function loadHistory() {
+    if(!userDocId) return;
+    const q = query(collection(db, "orders"), where("userId", "==", userDocId));
+    onSnapshot(q, (snap) => {
+      const list = document.getElementById('historyList');
+      if(snap.empty) {
+        list.innerHTML = '<p style="text-align:center; color:var(--mut);">No transactions found.</p>';
+        return;
+      }
+      
+      let html = '';
+      snap.forEach(d => {
+        const o = d.data();
+        
+        let badgeText = "VERIFYING"; 
+        let badgeClass = "pending";
+        
+        if(o.status === 'Approved') { badgeText = "DELIVERED"; badgeClass = "approved"; }
+        if(o.status === 'Rejected') { badgeText = "FAILED"; badgeClass = "rejected"; }
+
+        html += `
+          <div class="hist-item">
+            <div class="hist-info">
+              <h4>${o.productName} (x${o.qty})</h4>
+              <p>Game UID: ${o.gameUid} • ${o.country || 'India'}</p>
+              <p style="font-weight:800; color:var(--o); margin-top:4px;">Total: ₹${o.total}</p>
+            </div>
+            <span class="stat-badge ${badgeClass}">${badgeText}</span>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    });
+  }
+
+  window.saveProfile = async () => {
+    const newName = document.getElementById('profName').value.trim();
+    if(newName.length < 2) return alert("Name too short");
+    
+    try {
+      await setDoc(doc(db, "users", userDocId), { name: newName }, { merge: true });
+      currentUser.name = newName;
+      document.getElementById('userName').innerText = newName;
+      document.getElementById('bannerName').innerText = newName;
+      alert("Profile Updated!");
+      showPage('home');
+    } catch(e) {
+      alert("Error updating profile");
+    }
+  }
+
+  window.logout = async () => {
+    await signOut(auth);
+    localStorage.removeItem('ff_user_id');
+    localStorage.removeItem('ff_user_data');
+    location.reload();
+  }
+
+  window.onload = () => {
+    const savedId = localStorage.getItem('ff_user_id');
+    const savedData = localStorage.getItem('ff_user_data');
+    if(savedId && savedData) {
+      currentUser = JSON.parse(savedData);
+      userDocId = savedId;
+      getDoc(doc(db, "users", savedId)).then(snap => {
+        if(snap.exists()) {
+          if(snap.data().blocked) {
+            document.getElementById('loginGate').classList.add('hide');
+            document.getElementById('blockScreen').classList.remove('hide');
+          } else {
+            startApp();
+          }
+        }
+      }).catch(err => {
+        console.log("Auto login failed:", err);
+      });
+    }
+  };
+
+  // --- SMART CHAT BOT LOGIC ---
+  window.toggleChat = () => {
+    const box = document.getElementById('chatBox');
+    if(box.classList.contains('hide')) {
+      box.classList.remove('hide');
+      document.getElementById('chatInput').focus();
+    } else {
+      box.classList.add('hide');
+    }
+  };
+
+  window.sendChat = () => {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if(!msg) return;
+    
+    const body = document.getElementById('chatBody');
+    
+    // Add user message
+    body.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+    input.value = '';
+    body.scrollTop = body.scrollHeight;
+    
+    // Simulate Bot Reply after 1 second
+    setTimeout(() => {
+      let reply = "";
+      const lowerMsg = msg.toLowerCase();
+
+      // Smart Replies based on keywords
+      if(lowerMsg.includes("pending") || lowerMsg.includes("order") || lowerMsg.includes("payment")) {
+        reply = "Theek hai, aapka order 24 ghante ke andar process ho jayega. Main admin ko inform kar raha hoon, kripya wait karein.";
+      } else if(lowerMsg.includes("diamond") || lowerMsg.includes("uid") || lowerMsg.includes("id")) {
+        reply = "Aapka Free Fire UID verify ho raha hai. Delivery 24 ghante ke andar complete kar di jayegi.";
+      } else if(lowerMsg.includes("hi") || lowerMsg.includes("hello") || lowerMsg.includes("hey")) {
+        reply = "Hello! Main FF PRIME ka support assistant hoon. Aapki kya madad kar sakta hoon?";
+      } else {
+        reply = "Aapki request note kar li gayi hai. Aapka pending kaam 24 ghante ke andar solve kar diya jayega. Admin ko update bhej diya gaya hai.";
+      }
+
+      body.innerHTML += `<div class="chat-msg bot">${reply}</div>`;
+      body.scrollTop = body.scrollHeight;
+    }, 1000);
+  };
+</script>
+</body>
+</html>
